@@ -8,7 +8,7 @@ Funcionalidades implementadas:
 
 - Emisión de Boleta desde un pedido pagado de PrestaShop.
 
-![Configuración del Plugin en PrestaShop](https://imgur.com/a/6xQ930U "Configuración del Plugin en PrestaShop")
+![Configuración del Plugin en PrestaShop](https://imgur.com/uJ3FDdj "Configuración del Plugin en PrestaShop")
 
 El plugin fue probado con PrestaShop 1.7.8.2
 
