@@ -60,18 +60,18 @@ class Billmysales extends Module
 
         // textos para el usuario que ve el módulo
         $this->displayName = $this->l('BillMySales');
-        $this->description = $this->l('Pasarela de Facturación');
-        $this->confirmUninstall = $this->l('Al quitar el módulo no podrás utilizar BillMySales.');
+        $this->description = $this->l('Automatiza tus facturas y preocúpate de vender. BillMySales se encarga de procesar los pedidos de la tienda y pasarlos a tu facturador favorito. Así te puedes enfocar en hacer crecer tu negocio.');
+        $this->confirmUninstall = $this->l('Al quitar el módulo tu facturación dejará de ser automática.');
 
         // advertencias de configuración
         $this->warning = [];
         if (!Configuration::get('BILLMYSALES_ACTIVE')) {
-            $this->warning[] = $this->l('Envío de notificaciones a BillMySales desactivado.');
+            $this->warning[] = $this->l('La facturación automática está desactivada.');
         }
         if (!Configuration::get('BILLMYSALES_WEBHOOK')) {
-            $this->warning[] = $this->l('URL del webhook no está asignada.');
+            $this->warning[] = $this->l('Falta configurar el webhook de www.billmysales.com');
         }
-        $this->warning = implode(' / ', $this->warning);
+        $this->warning = implode(' ', $this->warning);
 
     }
 
@@ -140,7 +140,7 @@ class Billmysales extends Module
      */
     private function footer()
     {
-        return '<p class="text-center"><a href="https://billmysales.com" target="_blank">BillMySales</a> es un proyecto de <a href="https://sasco.cl" target="_blank">SASCO SpA</a> que tiene como misión automatizar la facturación en ecommerce.</p>';
+        return '<p class="text-center"><a href="https://billmysales.com" target="_blank">BillMySales</a> es un proyecto de <a href="https://sasco.cl" target="_blank">SASCO SpA</a></p>';
     }
 
     /**
@@ -175,26 +175,26 @@ class Billmysales extends Module
         return array(
             'form' => array(
                 'legend' => array(
-                'title' => $this->l('Opciones de Integración'),
+                'title' => $this->l('Opciones de notificaciones'),
                 'icon' => 'icon-cogs',
                 ),
                 'input' => array(
                     array(
                         'type' => 'switch',
-                        'label' => $this->l('Módulo activo'),
+                        'label' => $this->l('Envío de notificaciones'),
                         'name' => 'BILLMYSALES_ACTIVE',
                         'is_bool' => true,
-                        'desc' => $this->l('Recuerda que además la integración debe estar disponible en BillMySales para que el módulo funcione.'),
+                        'desc' => $this->l('Recuerda que la integración debe estar activa en BillMySales para que el módulo funcione.'),
                         'values' => array(
                             array(
                                 'id' => 'active_on',
                                 'value' => true,
-                                'label' => $this->l('Enabled')
+                                'label' => $this->l('Activo')
                             ),
                             array(
                                 'id' => 'active_off',
                                 'value' => false,
-                                'label' => $this->l('Disabled')
+                                'label' => $this->l('Inactivo')
                             )
                         ),
                     ),
@@ -203,32 +203,32 @@ class Billmysales extends Module
                         'label' => $this->l('Registro de notificaciones'),
                         'name' => 'BILLMYSALES_LOG',
                         'is_bool' => true,
-                        'desc' => $this->l('Se recomienda activar esta opción sólo si es necesario hacer una depuración de la integración.'),
+                        'desc' => $this->l('Se recomienda activar esta opción sólo si es necesario hacer una revisión de la integración en PrestaShop.'),
                         'values' => array(
                             array(
                                 'id' => 'active_on',
                                 'value' => true,
-                                'label' => $this->l('Enabled')
+                                'label' => $this->l('Activo')
                             ),
                             array(
                                 'id' => 'active_off',
                                 'value' => false,
-                                'label' => $this->l('Disabled')
+                                'label' => $this->l('Inactivo')
                             )
                         ),
                     ),
                     array(
                         'col' => 4,
                         'type' => 'text',
-                        'label' => $this->l('Url webhook'),
+                        'label' => $this->l('Webhook de notificaciones'),
                         'name' => 'BILLMYSALES_WEBHOOK',
                         'prefix' => '<i class="icon-key"></i>',
-                        'desc' => $this->l('URL del webhook en BillMySales.'),
+                        'desc' => $this->l('URL del webhook de la pasarela de facturación en BillMySales.'),
                         'required' => true,
                     ),
                 ),
                 'submit' => array(
-                    'title' => $this->l('Save'),
+                    'title' => $this->l('Guardar'),
                 ),
             ),
         );
@@ -305,7 +305,6 @@ class Billmysales extends Module
         $order['products'] = $Order->getProducts();
         $order['detail'] = $Order->getOrderDetailList();
         $order['shop'] = get_object_vars($Shop);
-        $order['params'] = $params;
         unset($order['shop']['theme']);
         // llamar al método que procesa la orden pagada
         return $this->processOrderPaid($order);

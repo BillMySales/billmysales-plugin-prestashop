@@ -20,10 +20,13 @@
  *}
 
 <div class="panel">
-    <h3><i class="icon icon-credit-card"></i> {l s='BillMySales' mod='billmysales'}</h3>
-    <p><strong>{l s='Pasarela de Facturación' mod='billmysales'}</strong></p>
-    <p>{l s='Para que este plugin pueda ser usado se requiere una cuenta en BillMySales.' mod='billmysales'}</p>
-    <ul>
-        <li><a href="https://billmysales.com" target="_blank">{l s='Ir a BillMySales' mod='billmysales'}</a></li>
-    </ul>
+    <h3><i class="icon icon-question-sign"></i> {l s='¿Pierdes mucho tiempo facturando a mano?' mod='billmysales'}</h3>
+    <h4>{l s='Automatiza tus facturas y preocúpate de vender.' mod='billmysales'}</h4>
+    <p>{l s='BillMySales se encarga de procesar los pedidos de la tienda y pasarlos a tu facturador favorito. Así te puedes enfocar en hacer crecer tu negocio.' mod='billmysales'}</p>
+    <p>{l s='Si usas ' mod='billmysales'}<a href="https://libredte.cl" target="_blank">LibreDTE</a>{l s=' o ' mod='billmysales'}<a href="https://bhexpress.cl" target="_blank">BHExpress</a>{l s=', contáctanos para obtener una cuenta gratuita en BillMySales.' mod='billmysales'}</p>
+   <div class="row">
+	<div class="alert alert-info">
+	  <p>{l s='Para conocer cómo funciona BillMySales, sus características y planes, revisa ' mod='billmysales'}<a href="https://billmysales.com" target="_blank">www.billmysales.com</a></p>
+	</div>
+  </div>
 </div>
