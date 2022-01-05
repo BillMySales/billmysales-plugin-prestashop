@@ -9,7 +9,7 @@ procesará según las reglas definidias en la pasarela de facturación en BillMy
 
 El plugin fue probado con PrestaShop 1.7.8.2
 
-![Configuración del módulo en PrestaShop](https://i.imgur.com/gxjnFE3.png "Configuración del módulo en PrestaShop")
+![Configuración del módulo en PrestaShop](https://i.imgur.com/KIZEhFf.png "Configuración del módulo en PrestaShop")
 
 Instalar a partir de este código fuente
 ---------------------------------------

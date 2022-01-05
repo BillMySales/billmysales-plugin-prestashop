@@ -37,6 +37,7 @@ class Billmysales extends Module
         'BILLMYSALES_ACTIVE' => false,
         'BILLMYSALES_LOG' => false,
         'BILLMYSALES_WEBHOOK' => '',
+        'BILLMYSALES_TOKEN' => '',
     ]; ///< Configuración inicial del módulo
 
     protected $config_form = false;
@@ -72,7 +73,6 @@ class Billmysales extends Module
             $this->warning[] = $this->l('Falta configurar el webhook de www.billmysales.com');
         }
         $this->warning = implode(' ', $this->warning);
-
     }
 
     /**
@@ -222,8 +222,17 @@ class Billmysales extends Module
                         'type' => 'text',
                         'label' => $this->l('Webhook de notificaciones'),
                         'name' => 'BILLMYSALES_WEBHOOK',
-                        'prefix' => '<i class="icon-key"></i>',
+                        'prefix' => '<i class="icon-exchange"></i>',
                         'desc' => $this->l('URL del webhook de la pasarela de facturación en BillMySales.'),
+                        'required' => true,
+                    ),
+                    array(
+                        'col' => 4,
+                        'type' => 'text',
+                        'label' => $this->l('Token del webhook'),
+                        'name' => 'BILLMYSALES_TOKEN',
+                        'prefix' => '<i class="icon-key"></i>',
+                        'desc' => $this->l('Clave secreta para validar el envío de las notificaciones a BillMySales.'),
                         'required' => true,
                     ),
                 ),
@@ -337,17 +346,29 @@ class Billmysales extends Module
      */
     private function api_post($url, $data)
     {
+        $data = json_encode($data);
         $curl = curl_init();
         curl_setopt_array($curl, [
             CURLOPT_CUSTOMREQUEST => 'POST',
             CURLOPT_URL => $url,
-            CURLOPT_HTTPHEADER => [],
-            CURLOPT_POSTFIELDS => json_encode($data),
+            CURLOPT_HTTPHEADER => [
+                'X-PrestashopBMS-Hmac-Sha256: ' . $this->sign_data($data)
+            ],
+            CURLOPT_POSTFIELDS => $data,
             CURLOPT_RETURNTRANSFER => true,
         ]);
         $response = curl_exec($curl);
         curl_close($curl);
         return json_decode($response, true);
+    }
+
+    /**
+     * Método que calcula la firma de los datos
+     */
+    private function sign_data($data)
+    {
+        $token = Configuration::get('BILLMYSALES_TOKEN');
+        return base64_encode(hash_hmac('sha256', $data, $token, true));
     }
 
 }
