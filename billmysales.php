@@ -48,7 +48,7 @@ class Billmysales extends Module
         // configuración base del módulo
         $this->name = 'billmysales';
         $this->tab = 'billing_invoicing';
-        $this->version = '1.0.0';
+        $this->version = '1.0.1';
         $this->author = 'SASCO SpA';
         $this->need_instance = 0;
         $this->ps_versions_compliancy = array('min' => '1.7', 'max' => _PS_VERSION_);
@@ -301,6 +301,7 @@ class Billmysales extends Module
         $Customer = new Customer((int)$Order->id_customer);
         $Cart = new Cart($Order->id_cart);
         $Address = new Address($Cart->id_address_delivery);
+        $Billing = new Address($Cart->id_address_invoice);
         $Carrier = new Carrier((int)($Order->id_carrier));
         $Shop = new Shop((int)($Order->id_shop));
         // construir arreglo con los datos que se usarán
@@ -310,6 +311,7 @@ class Billmysales extends Module
         $order['cart'] = get_object_vars($Cart);
         $order['cart']['rules'] = $Cart->getCartRules();
         $order['address'] = get_object_vars($Address);
+        $order['billing'] = get_object_vars($Billing);
         $order['carrier'] = get_object_vars($Carrier);
         $order['products'] = $Order->getProducts();
         $order['detail'] = $Order->getOrderDetailList();
