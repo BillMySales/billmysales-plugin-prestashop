@@ -48,7 +48,7 @@ class Billmysales extends Module
         // configuración base del módulo
         $this->name = 'billmysales';
         $this->tab = 'billing_invoicing';
-        $this->version = '1.0.1';
+        $this->version = '1.0.2';
         $this->author = 'SASCO SpA';
         $this->need_instance = 0;
         $this->ps_versions_compliancy = array('min' => '1.7', 'max' => _PS_VERSION_);
@@ -354,13 +354,15 @@ class Billmysales extends Module
             CURLOPT_CUSTOMREQUEST => 'POST',
             CURLOPT_URL => $url,
             CURLOPT_HTTPHEADER => [
-                'X-PrestashopBMS-Hmac-Sha256: ' . $this->sign_data($data)
+                'Content-Type: application/json; charset=utf-8',
+                'X-PRESTASHOPBMS-HMAC-SHA256: ' . $this->sign_data($data)
             ],
             CURLOPT_POSTFIELDS => $data,
             CURLOPT_RETURNTRANSFER => true,
         ]);
         $response = curl_exec($curl);
         curl_close($curl);
+        echo(json_decode($response, true));
         return json_decode($response, true);
     }
 
