@@ -32,7 +32,6 @@ if (!defined('_PS_VERSION_')) {
  */
 class Billmysales extends Module
 {
-
     private $defaultConfig = [
         'BILLMYSALES_ACTIVE' => false,
         'BILLMYSALES_LOG' => false,
@@ -51,7 +50,7 @@ class Billmysales extends Module
         $this->version = '1.0.2';
         $this->author = 'SASCO SpA';
         $this->need_instance = 0;
-        $this->ps_versions_compliancy = array('min' => '1.7', 'max' => _PS_VERSION_);
+        $this->ps_versions_compliancy = ['min' => '1.7', 'max' => _PS_VERSION_];
 
         // módulo es compatible con bootstrap (PrestaShop 1.7)
         $this->bootstrap = true;
@@ -159,12 +158,12 @@ class Billmysales extends Module
         $helper->currentIndex = $this->context->link->getAdminLink('AdminModules', false)
             .'&configure='.$this->name.'&tab_module='.$this->tab.'&module_name='.$this->name;
         $helper->token = Tools::getAdminTokenLite('AdminModules');
-        $helper->tpl_vars = array(
+        $helper->tpl_vars = [
             'fields_value' => $this->getConfigFormValues(), /* Add values for your inputs */
             'languages' => $this->context->controller->getLanguages(),
             'id_language' => $this->context->language->id,
-        );
-        return $helper->generateForm(array($this->getConfigForm()));
+        ];
+        return $helper->generateForm([$this->getConfigForm()]);
     }
 
     /**
@@ -172,52 +171,52 @@ class Billmysales extends Module
      */
     protected function getConfigForm()
     {
-        return array(
-            'form' => array(
-                'legend' => array(
+        return [
+            'form' => [
+                'legend' => [
                 'title' => $this->l('Opciones de notificaciones'),
                 'icon' => 'icon-cogs',
-                ),
-                'input' => array(
-                    array(
+                ],
+                'input' => [
+                    [
                         'type' => 'switch',
                         'label' => $this->l('Envío de notificaciones'),
                         'name' => 'BILLMYSALES_ACTIVE',
                         'is_bool' => true,
                         'desc' => $this->l('Recuerda que la integración debe estar activa en BillMySales para que el módulo funcione.'),
-                        'values' => array(
-                            array(
+                        'values' => [
+                            [
                                 'id' => 'active_on',
                                 'value' => true,
-                                'label' => $this->l('Activo')
-                            ),
-                            array(
+                                'label' => $this->l('Activo'),
+                            ],
+                            [
                                 'id' => 'active_off',
                                 'value' => false,
-                                'label' => $this->l('Inactivo')
-                            )
-                        ),
-                    ),
-                    array(
+                                'label' => $this->l('Inactivo'),
+                            ],
+                        ],
+                    ],
+                    [
                         'type' => 'switch',
                         'label' => $this->l('Registro de notificaciones'),
                         'name' => 'BILLMYSALES_LOG',
                         'is_bool' => true,
                         'desc' => $this->l('Se recomienda activar esta opción sólo si es necesario hacer una revisión de la integración en PrestaShop.'),
-                        'values' => array(
-                            array(
+                        'values' => [
+                            [
                                 'id' => 'active_on',
                                 'value' => true,
-                                'label' => $this->l('Activo')
-                            ),
-                            array(
+                                'label' => $this->l('Activo'),
+                            ],
+                            [
                                 'id' => 'active_off',
                                 'value' => false,
-                                'label' => $this->l('Inactivo')
-                            )
-                        ),
-                    ),
-                    array(
+                                'label' => $this->l('Inactivo'),
+                            ],
+                        ],
+                    ],
+                    [
                         'col' => 4,
                         'type' => 'text',
                         'label' => $this->l('Webhook de notificaciones'),
@@ -225,8 +224,8 @@ class Billmysales extends Module
                         'prefix' => '<i class="icon-exchange"></i>',
                         'desc' => $this->l('URL del webhook de la pasarela de facturación en BillMySales.'),
                         'required' => true,
-                    ),
-                    array(
+                    ],
+                    [
                         'col' => 4,
                         'type' => 'text',
                         'label' => $this->l('Token del webhook'),
@@ -234,13 +233,13 @@ class Billmysales extends Module
                         'prefix' => '<i class="icon-key"></i>',
                         'desc' => $this->l('Clave secreta para validar el envío de las notificaciones a BillMySales.'),
                         'required' => true,
-                    ),
-                ),
-                'submit' => array(
+                    ],
+                ],
+                'submit' => [
                     'title' => $this->l('Guardar'),
-                ),
-            ),
-        );
+                ],
+            ],
+        ];
     }
 
     /**
@@ -355,7 +354,7 @@ class Billmysales extends Module
             CURLOPT_URL => $url,
             CURLOPT_HTTPHEADER => [
                 'Content-Type: application/json; charset=utf-8',
-                'X-PRESTASHOPBMS-HMAC-SHA256: ' . $this->sign_data($data)
+                'X-PRESTASHOPBMS-HMAC-SHA256: ' . $this->sign_data($data),
             ],
             CURLOPT_POSTFIELDS => $data,
             CURLOPT_RETURNTRANSFER => true,
