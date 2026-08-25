@@ -20,10 +20,16 @@
  * En caso contrario, consulte <http://www.gnu.org/licenses/agpl.html>.
  */
 
-$sql = [];
-
-foreach ($sql as $query) {
-    if (Db::getInstance()->execute($query) == false) {
-        return false;
-    }
-}
+// Este módulo no crea tablas propias: toda su configuración se guarda con
+// Configuration::updateValue()/deleteByName() (ver install()/uninstall()
+// en billmysales.php). Se deja este archivo (parte del skeleton estándar
+// de módulos de PrestaShop) por si en el futuro se necesita agregar SQL
+// de desinstalación.
+//
+// $sql = [];
+//
+// foreach ($sql as $query) {
+//     if (Db::getInstance()->execute($query) == false) {
+//         return false;
+//     }
+// }
