@@ -7,7 +7,9 @@ para realizar el proceso de facturación del pedido.
 El envío de los datos se realiza cada vez que el pedido cambia de estado y se
 procesará según las reglas definidias en la pasarela de facturación en BillMySales.
 
-El plugin fue probado con PrestaShop 1.7.8.2
+El plugin fue probado con PrestaShop 8.1.7 (PHP 8.1), instalado tanto en modo desarrollo
+como desde el .zip generado a partir de este código fuente. Es compatible desde PrestaShop 1.7
+(ver `ps_versions_compliancy` en `billmysales.php`).
 
 ![Configuración del módulo en PrestaShop](https://i.imgur.com/KIZEhFf.png "Configuración del módulo en PrestaShop")
 
