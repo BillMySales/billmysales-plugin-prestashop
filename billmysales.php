@@ -100,7 +100,8 @@ class Billmysales extends Module
             $this->registerHook('additionalCustomerAddressFields') &&
             $this->registerHook('actionObjectAddressAddAfter') &&
             $this->registerHook('actionObjectAddressUpdateAfter') &&
-            $this->registerHook('actionObjectAddressDeleteAfter');
+            $this->registerHook('actionObjectAddressDeleteAfter') &&
+            $this->registerHook('displayAdminOrderMainBottom');
 
     }
 
@@ -608,6 +609,49 @@ class Billmysales extends Module
             }
         }
         return $values;
+    }
+
+    /**
+     * Método que agrega, en la columna derecha del detalle del pedido
+     * (debajo de "Payment"), un bloque para completar/editar los campos
+     * personalizados de facturación (RUT, Giro, etc.). Es necesario
+     * porque el formulario de dirección del ADMIN (a diferencia del
+     * checkout) no tiene el hook additionalCustomerAddressFields — así
+     * que un pedido creado a mano desde el admin nunca pasa por ahí y
+     * queda sin esos datos.
+     */
+    public function hookDisplayAdminOrderMainBottom(array $params = [])
+    {
+        $custom_fields = $this->getCustomFields();
+        if (empty($custom_fields) || empty($params['id_order'])) {
+            return '';
+        }
+
+        $order = new Order((int)$params['id_order']);
+        if (!Validate::isLoadedObject($order) || !$order->id_address_invoice) {
+            return '';
+        }
+
+        $address = new Address((int)$order->id_address_invoice);
+        if (!Validate::isLoadedObject($address)) {
+            return '';
+        }
+
+        // guardar si el formulario de este bloque se envió (self-submit:
+        // la página del pedido se vuelve a cargar con los mismos datos)
+        if (Tools::isSubmit('submitBillMySalesOrderFields')
+            && (int)Tools::getValue('billmysales_id_order') === (int)$order->id
+        ) {
+            $this->saveAddressCustomFields($address);
+        }
+
+        $this->context->smarty->assign([
+            'billmysales_order_id' => $order->id,
+            'billmysales_fields' => $custom_fields,
+            'billmysales_values' => $this->getAddressCustomFieldValues($address->id),
+        ]);
+
+        return $this->context->smarty->fetch($this->local_path.'views/templates/admin/order_fields.tpl');
     }
 
     /**
