@@ -38,6 +38,7 @@ class Billmysales extends Module
         'BILLMYSALES_WEBHOOK' => '',
         'BILLMYSALES_TOKEN' => '',
         'BILLMYSALES_CUSTOM_FIELDS' => '[]',
+        'BILLMYSALES_NOTIFY_STATUSES' => '[]',
     ]; ///< Configuración inicial del módulo
 
     protected $config_form = false;
@@ -260,6 +261,17 @@ class Billmysales extends Module
                         'desc' => $this->l('Clave secreta para validar el envío de las notificaciones a BillMySales.'),
                         'required' => true,
                     ],
+                    [
+                        'type' => 'checkbox',
+                        'label' => $this->l('Estados que notifican'),
+                        'name' => 'BILLMYSALES_NOTIFY_STATUSES',
+                        'desc' => $this->l('Solo se notificará a BillMySales cuando el pedido cambie a uno de estos estados. Si no marca ninguno, no se enviará ninguna notificación. Se recomienda marcar solo el estado que corresponde a "pago aceptado", para no reprocesar el mismo pedido más de una vez.'),
+                        'values' => [
+                            'query' => OrderState::getOrderStates((int)$this->context->language->id),
+                            'id' => 'id_order_state',
+                            'name' => 'name',
+                        ],
+                    ],
                 ],
                 'submit' => [
                     'title' => $this->l('Guardar'),
@@ -275,9 +287,35 @@ class Billmysales extends Module
     {
         $config = [];
         foreach ($this->defaultConfig as $key => $value) {
+            if ($key === 'BILLMYSALES_NOTIFY_STATUSES') {
+                continue; // se arma aparte más abajo: es un checkbox por cada estado
+            }
             $config[$key] = Configuration::get($key, $value);
         }
+
+        // el helper de checkboxes de PrestaShop espera una clave
+        // "NOMBRE_DEL_CAMPO_<id>" por cada casilla (ver
+        // views/helpers/form/form.tpl), no un único valor
+        $selected = $this->getNotifyStatuses();
+        foreach (OrderState::getOrderStates((int)$this->context->language->id) as $state) {
+            $config['BILLMYSALES_NOTIFY_STATUSES_'.$state['id_order_state']] =
+                in_array((string)$state['id_order_state'], $selected, true);
+        }
+
         return $config;
+    }
+
+    /**
+     * Método que devuelve los IDs (como string) de los estados de pedido
+     * configurados para notificar a BillMySales (ver
+     * hookActionOrderStatusPostUpdate())
+     *
+     * @return string[]
+     */
+    protected function getNotifyStatuses()
+    {
+        $statuses = json_decode((string)Configuration::get('BILLMYSALES_NOTIFY_STATUSES'), true);
+        return is_array($statuses) ? $statuses : [];
     }
 
     /**
@@ -285,10 +323,23 @@ class Billmysales extends Module
      */
     protected function postProcess()
     {
-        $form_values = $this->getConfigFormValues();
-        foreach (array_keys($form_values) as $key) {
+        foreach (array_keys($this->defaultConfig) as $key) {
+            if ($key === 'BILLMYSALES_NOTIFY_STATUSES') {
+                continue; // se guarda aparte, ver más abajo
+            }
             Configuration::updateValue($key, Tools::getValue($key));
         }
+
+        // se arma la lista de estados marcados a partir de los checkboxes
+        // individuales BILLMYSALES_NOTIFY_STATUSES_<id_order_state> que
+        // PrestaShop genera para este campo (ver getConfigForm())
+        $selected = [];
+        foreach (OrderState::getOrderStates((int)$this->context->language->id) as $state) {
+            if (Tools::getValue('BILLMYSALES_NOTIFY_STATUSES_'.$state['id_order_state'])) {
+                $selected[] = (string)$state['id_order_state'];
+            }
+        }
+        Configuration::updateValue('BILLMYSALES_NOTIFY_STATUSES', json_encode($selected));
     }
 
     /**
@@ -567,6 +618,14 @@ class Billmysales extends Module
     {
         // no hay nuevo estado de la orden
         if (empty($params['newOrderStatus']) || empty($params['id_order'])) {
+            return;
+        }
+        // solo notificar en los estados marcados en "Estados que
+        // notifican" (pestaña Configuración) — si no, se dispara en
+        // CUALQUIER cambio de estado y BillMySales termina recibiendo
+        // varias notificaciones para el mismo pedido (una por cada
+        // cambio), rechazando las repetidas
+        if (!in_array((string)$params['newOrderStatus']->id, $this->getNotifyStatuses(), true)) {
             return;
         }
         // crear objetos que se usarán para extraer datos
