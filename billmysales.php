@@ -101,7 +101,8 @@ class Billmysales extends Module
             $this->registerHook('actionObjectAddressAddAfter') &&
             $this->registerHook('actionObjectAddressUpdateAfter') &&
             $this->registerHook('actionObjectAddressDeleteAfter') &&
-            $this->registerHook('displayAdminOrderMainBottom');
+            $this->registerHook('displayAdminOrderMainBottom') &&
+            $this->registerHook('displayAdminOrderCreateFields');
 
     }
 
@@ -652,6 +653,27 @@ class Billmysales extends Module
         ]);
 
         return $this->context->smarty->fetch($this->local_path.'views/templates/admin/order_fields.tpl');
+    }
+
+    /**
+     * Método que agrega nuestros campos personalizados de facturación
+     * DENTRO del formulario nativo de "Crear pedido" del admin (ver
+     * override en views/PrestaShop/Admin/Sell/Order/Order/Blocks/Create/
+     * summary.html.twig). Como el pedido todavía no existe, no hay
+     * valores previos que precargar; los valores enviados se capturan y
+     * guardan en hookActionOrderStatusPostUpdate() (mismo POST, se
+     * procesa junto con el resto al crear el pedido).
+     */
+    public function hookDisplayAdminOrderCreateFields(array $params = [])
+    {
+        $custom_fields = $this->getCustomFields();
+        if (empty($custom_fields)) {
+            return '';
+        }
+
+        $this->context->smarty->assign('billmysales_fields', $custom_fields);
+
+        return $this->context->smarty->fetch($this->local_path.'views/templates/admin/order_create_fields.tpl');
     }
 
     /**

@@ -1,0 +1,39 @@
+{#**
+ * BillMySales: Pasarela de Facturación
+ * Copyright (C) SASCO SpA (https://sasco.cl)
+ *
+ * Este programa es software libre: usted puede redistribuirlo y/o
+ * modificarlo bajo los términos de la Licencia Pública General Affero de GNU
+ * publicada por la Fundación para el Software Libre, ya sea la versión
+ * 3 de la Licencia, o (a su elección) cualquier versión posterior de la
+ * misma.
+ *
+ * Este programa se distribuye con la esperanza de que sea útil, pero
+ * SIN GARANTÍA ALGUNA; ni siquiera la garantía implícita
+ * MERCANTIL o de APTITUD PARA UN PROPÓSITO DETERMINADO.
+ * Consulte los detalles de la Licencia Pública General Affero de GNU para
+ * obtener una información más detallada.
+ *
+ * Debería haber recibido una copia de la Licencia Pública General Affero de GNU
+ * junto a este programa.
+ * En caso contrario, consulte <http://www.gnu.org/licenses/agpl.html>.
+ *
+ * Override del template nativo de "Crear pedido" (admin), para agregar
+ * nuestros campos personalizados de facturación DENTRO del mismo
+ * <form> que ya envía el estado del pedido — así, si el pedido nace
+ * directo en un estado que notifica a BillMySales, los datos viajan
+ * en el mismo POST y no hace falta pasar por el detalle del pedido
+ * para completarlos después.
+ *
+ * "cart_summary_form_rest" es el único bloque que expone el template
+ * original (ver core: Blocks/Create/summary.html.twig); no hay un
+ * bloque dedicado antes de "Estado del pedido", así que los campos
+ * quedan justo después (dentro del mismo formulario igual, se envían
+ * juntos con el resto de los datos al crear el pedido).
+ *#}
+{% extends '@!PrestaShop/Admin/Sell/Order/Order/Blocks/Create/summary.html.twig' %}
+
+{% block cart_summary_form_rest %}
+    {{ parent() }}
+    {{ renderhook('displayAdminOrderCreateFields')|raw }}
+{% endblock %}
