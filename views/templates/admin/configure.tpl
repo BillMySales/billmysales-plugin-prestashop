@@ -30,3 +30,16 @@
 	</div>
   </div>
 </div>
+
+<ul class="nav nav-tabs" style="margin-bottom:20px;">
+    <li class="{if $billmysales_tab === 'configuracion'}active{/if}">
+        <a href="{$billmysales_tab_url|escape:'html':'UTF-8'}&billmysales_tab=configuracion">
+            <i class="icon icon-cogs"></i> {l s='Configuración' mod='billmysales'}
+        </a>
+    </li>
+    <li class="{if $billmysales_tab === 'campos'}active{/if}">
+        <a href="{$billmysales_tab_url|escape:'html':'UTF-8'}&billmysales_tab=campos">
+            <i class="icon icon-list-alt"></i> {l s='Campos personalizados' mod='billmysales'}
+        </a>
+    </li>
+</ul>

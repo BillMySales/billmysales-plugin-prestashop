@@ -129,14 +129,35 @@ class Billmysales extends Module
      */
     public function getContent()
     {
-        // procesar valores pasados en el formulario
+        // procesar valores pasados en el formulario de configuración
         if (((bool)Tools::isSubmit('submitBillMySalesModule')) == true) {
             $this->postProcess();
         }
+        // procesar valores pasados en el formulario de campos personalizados
+        if (((bool)Tools::isSubmit('submitBillMySalesCustomFields')) == true) {
+            $this->postProcessCustomFields();
+        }
+        // pestaña actualmente seleccionada (Configuración o Campos personalizados)
+        $tab = Tools::getValue('billmysales_tab', 'configuracion');
+        // OJO: getAdminLink(..., false) NO incluye el token de seguridad;
+        // hay que agregarlo a mano o los links de las pestañas disparan
+        // "INVALID SECURITY TOKEN" al hacer clic
+        $tab_url = $this->context->link->getAdminLink('AdminModules', false)
+            .'&configure='.$this->name.'&tab_module='.$this->tab.'&module_name='.$this->name
+            .'&token='.Tools::getAdminTokenLite('AdminModules');
         // armar página del formulario
-        $this->context->smarty->assign('module_dir', $this->_path);
+        $this->context->smarty->assign([
+            'module_dir' => $this->_path,
+            'billmysales_tab' => $tab,
+            'billmysales_tab_url' => $tab_url,
+        ]);
         $output = $this->context->smarty->fetch($this->local_path.'views/templates/admin/configure.tpl');
-        return $output.$this->renderForm().$this->footer();
+        if ($tab === 'campos') {
+            $output .= $this->renderCustomFieldsForm();
+        } else {
+            $output .= $this->renderForm();
+        }
+        return $output.$this->footer();
     }
 
     /**
@@ -281,6 +302,118 @@ class Billmysales extends Module
     {
         $fields = json_decode((string)Configuration::get('BILLMYSALES_CUSTOM_FIELDS'), true);
         return is_array($fields) ? $fields : [];
+    }
+
+    /**
+     * Método que arma el bloque HTML de administración de los campos
+     * personalizados que se agregan al formulario de dirección del checkout
+     */
+    protected function renderCustomFieldsForm()
+    {
+        $fields = $this->getCustomFields();
+        // si no hay ningún campo guardado todavía, se muestra una fila vacía
+        // para que el formulario no aparezca en blanco sin nada que llenar
+        if (empty($fields)) {
+            $fields = [
+                ['key' => '', 'label' => '', 'values' => [], 'required' => false],
+            ];
+        }
+        // los valores se muestran en el formulario separados por coma
+        foreach ($fields as &$field) {
+            $field['values'] = implode(', ', $field['values']);
+        }
+        unset($field);
+
+        $this->context->smarty->assign([
+            'billmysales_fields' => $fields,
+            'billmysales_current_index' => $this->context->link->getAdminLink('AdminModules', false)
+                .'&configure='.$this->name.'&tab_module='.$this->tab.'&module_name='.$this->name,
+            'billmysales_token' => Tools::getAdminTokenLite('AdminModules'),
+        ]);
+
+        return $this->context->smarty->fetch($this->local_path.'views/templates/admin/custom_fields.tpl');
+    }
+
+    /**
+     * Método que guarda la lista de campos personalizados del checkout
+     * enviada desde el formulario de administración
+     */
+    protected function postProcessCustomFields()
+    {
+        $raw_fields = Tools::getValue('billmysales_fields');
+        $clean = [];
+        $used_keys = [];
+
+        if (is_array($raw_fields)) {
+            // se recolectan primero las claves de TODOS los campos que llegan
+            // (editados y nuevos) antes de generar ninguna clave nueva, para
+            // no terminar con dos campos con la misma clave interna
+            foreach ($raw_fields as $raw_field) {
+                if (!empty($raw_field['key'])) {
+                    $used_keys[] = Tools::str2url($raw_field['key']);
+                }
+            }
+
+            foreach ($raw_fields as $raw_field) {
+                if (empty($raw_field['label'])) {
+                    continue; // fila vacía (ej. una que quedó al agregar de más), se descarta
+                }
+
+                $label = trim(strip_tags($raw_field['label']));
+
+                // si el campo ya existía (edición), se reutiliza su clave para
+                // no perder el vínculo con datos ya guardados en direcciones
+                // anteriores; si es un campo nuevo, se genera una a partir de
+                // la etiqueta
+                $key = !empty($raw_field['key'])
+                    ? Tools::str2url($raw_field['key'])
+                    : $this->generateCustomFieldKey($label, $used_keys);
+                $used_keys[] = $key;
+
+                // valores separados por coma -> selector; vacío -> texto libre
+                $values = [];
+                $values_raw = isset($raw_field['values']) ? trim($raw_field['values']) : '';
+                if ($values_raw !== '') {
+                    foreach (explode(',', $values_raw) as $value) {
+                        $value = trim(strip_tags($value));
+                        if ($value !== '') {
+                            $values[] = $value;
+                        }
+                    }
+                }
+
+                $clean[] = [
+                    'key' => $key,
+                    'label' => $label,
+                    'values' => $values,
+                    'required' => !empty($raw_field['required']),
+                ];
+            }
+        }
+
+        Configuration::updateValue('BILLMYSALES_CUSTOM_FIELDS', json_encode($clean));
+    }
+
+    /**
+     * Método que genera una clave (interna) única a partir de la etiqueta de
+     * un campo nuevo, evitando choques con claves ya usadas en el mismo
+     * guardado
+     */
+    private function generateCustomFieldKey($label, $used_keys)
+    {
+        $base = Tools::str2url($label);
+        if ($base === '') {
+            $base = 'campo';
+        }
+
+        $key = $base;
+        $i = 2;
+        while (in_array($key, $used_keys, true)) {
+            $key = $base.'_'.$i;
+            $i++;
+        }
+
+        return $key;
     }
 
     /**
