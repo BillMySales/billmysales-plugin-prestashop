@@ -95,7 +95,11 @@ class Billmysales extends Module
         return parent::install() &&
             $this->registerHook('header') &&
             $this->registerHook('displayBackOfficeHeader') &&
-            $this->registerHook('actionOrderStatusPostUpdate');
+            $this->registerHook('actionOrderStatusPostUpdate') &&
+            $this->registerHook('additionalCustomerAddressFields') &&
+            $this->registerHook('actionObjectAddressAddAfter') &&
+            $this->registerHook('actionObjectAddressUpdateAfter') &&
+            $this->registerHook('actionObjectAddressDeleteAfter');
 
     }
 
@@ -267,6 +271,19 @@ class Billmysales extends Module
     }
 
     /**
+     * Método que devuelve la lista de campos personalizados configurados
+     * para el formulario de dirección del checkout (ver
+     * hookAdditionalCustomerAddressFields())
+     *
+     * @return array Cada elemento: ['key','label','values' => array,'required' => bool]
+     */
+    protected function getCustomFields()
+    {
+        $fields = json_decode((string)Configuration::get('BILLMYSALES_CUSTOM_FIELDS'), true);
+        return is_array($fields) ? $fields : [];
+    }
+
+    /**
      * Archivos CSS y JavaScript para el backoffice
      */
     public function hookDisplayBackOfficeHeader()
@@ -284,6 +301,129 @@ class Billmysales extends Module
     {
         $this->context->controller->addJS($this->_path.'/views/js/front.js');
         $this->context->controller->addCSS($this->_path.'/views/css/front.css');
+    }
+
+    /**
+     * Método que agrega los campos personalizados configurados al
+     * formulario de dirección que PrestaShop usa tanto en "Mis direcciones"
+     * como en el paso de dirección del checkout
+     */
+    public function hookAdditionalCustomerAddressFields(array $params = [])
+    {
+        $extra_fields = [];
+
+        foreach ($this->getCustomFields() as $custom_field) {
+            $field = new FormField();
+            $field->setName('billmysales_'.$custom_field['key'])
+                ->setLabel($custom_field['label'])
+                ->setRequired(!empty($custom_field['required']));
+
+            if (!empty($custom_field['values'])) {
+                $field->setType('select');
+                foreach ($custom_field['values'] as $value) {
+                    $field->addAvailableValue($value, $value);
+                }
+            } else {
+                $field->setType('text');
+            }
+
+            $extra_fields[] = $field;
+        }
+
+        return $extra_fields;
+    }
+
+    /**
+     * Método que guarda los valores enviados para los campos personalizados
+     * cuando se crea una dirección (PrestaShop no los guarda solo, ver
+     * hookAdditionalCustomerAddressFields())
+     */
+    public function hookActionObjectAddressAddAfter(array $params = [])
+    {
+        if (!empty($params['object']) && $params['object'] instanceof Address) {
+            $this->saveAddressCustomFields($params['object']);
+        }
+    }
+
+    /**
+     * Igual que hookActionObjectAddressAddAfter(), pero cuando la dirección
+     * se actualiza en vez de crearse
+     */
+    public function hookActionObjectAddressUpdateAfter(array $params = [])
+    {
+        if (!empty($params['object']) && $params['object'] instanceof Address) {
+            $this->saveAddressCustomFields($params['object']);
+        }
+    }
+
+    /**
+     * Método que borra los valores de campos personalizados guardados para
+     * una dirección cuando esta se elimina, para no dejar datos huérfanos
+     * en la tabla propia del módulo
+     */
+    public function hookActionObjectAddressDeleteAfter(array $params = [])
+    {
+        if (empty($params['object']) || !($params['object'] instanceof Address)) {
+            return;
+        }
+
+        Db::getInstance()->execute(
+            'DELETE FROM `'._DB_PREFIX_.'billmysales_address_field`
+            WHERE `id_address` = '.(int)$params['object']->id
+        );
+    }
+
+    /**
+     * Método que guarda en la tabla propia del módulo los valores enviados
+     * para los campos personalizados de una dirección
+     */
+    private function saveAddressCustomFields(Address $address)
+    {
+        $custom_fields = $this->getCustomFields();
+        if (empty($custom_fields) || !$address->id) {
+            return;
+        }
+
+        foreach ($custom_fields as $custom_field) {
+            $value = Tools::getValue('billmysales_'.$custom_field['key']);
+            if ($value === false) {
+                continue; // el campo no vino en este envío (ej. guardado desde el back office)
+            }
+
+            Db::getInstance()->execute(
+                'REPLACE INTO `'._DB_PREFIX_.'billmysales_address_field`
+                (`id_address`, `field_key`, `field_value`)
+                VALUES ('.(int)$address->id.', \''.pSQL($custom_field['key']).'\', \''.pSQL($value).'\')'
+            );
+        }
+    }
+
+    /**
+     * Método que devuelve los valores de campos personalizados guardados
+     * para una dirección, para incluirlos en el pedido que se envía a
+     * BillMySales (ver hookActionOrderStatusPostUpdate())
+     *
+     * @return array ['clave' => 'valor', ...]
+     */
+    private function getAddressCustomFieldValues($id_address)
+    {
+        if (empty($id_address)) {
+            return [];
+        }
+
+        $rows = Db::getInstance()->executeS(
+            'SELECT `field_key`, `field_value`
+            FROM `'._DB_PREFIX_.'billmysales_address_field`
+            WHERE `id_address` = '.(int)$id_address
+        );
+
+        $values = [];
+        if (is_array($rows)) {
+            foreach ($rows as $row) {
+                $values[$row['field_key']] = $row['field_value'];
+            }
+        }
+        return $values;
     }
 
     /**
@@ -312,6 +452,7 @@ class Billmysales extends Module
         $order['cart']['rules'] = $Cart->getCartRules();
         $order['address'] = get_object_vars($Address);
         $order['billing'] = get_object_vars($Billing);
+        $order['billing']['custom_fields'] = $this->getAddressCustomFieldValues($Billing->id);
         $order['carrier'] = get_object_vars($Carrier);
         $order['products'] = $Order->getProducts();
         $order['detail'] = $Order->getOrderDetailList();
