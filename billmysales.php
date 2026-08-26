@@ -37,6 +37,7 @@ class Billmysales extends Module
         'BILLMYSALES_LOG' => false,
         'BILLMYSALES_WEBHOOK' => '',
         'BILLMYSALES_TOKEN' => '',
+        'BILLMYSALES_CUSTOM_FIELDS' => '[]',
     ]; ///< Configuración inicial del módulo
 
     protected $config_form = false;

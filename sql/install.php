@@ -1,4 +1,5 @@
 <?php
+
 /**
  * BillMySales: Pasarela de Facturación
  * Copyright (C) SASCO SpA (https://sasco.cl)
@@ -20,16 +21,23 @@
  * En caso contrario, consulte <http://www.gnu.org/licenses/agpl.html>.
  */
 
-// Este módulo no crea tablas propias: toda su configuración se guarda con
+// La mayor parte de la configuración del módulo se guarda con
 // Configuration::updateValue()/deleteByName() (ver install()/uninstall()
-// en billmysales.php). Se deja este archivo (parte del skeleton estándar
-// de módulos de PrestaShop) por si en el futuro se necesita agregar SQL
-// de instalación.
-//
-// $sql = [];
-//
-// foreach ($sql as $query) {
-//     if (Db::getInstance()->execute($query) == false) {
-//         return false;
-//     }
-// }
+// en billmysales.php). Esta tabla es la única excepción: guarda los
+// valores de los campos personalizados que se agregan al formulario de
+// dirección del checkout (ver hookAdditionalCustomerAddressFields()).
+
+$sql = [];
+
+$sql[] = 'CREATE TABLE IF NOT EXISTS `'._DB_PREFIX_.'billmysales_address_field` (
+    `id_address` INT UNSIGNED NOT NULL,
+    `field_key` VARCHAR(64) NOT NULL,
+    `field_value` VARCHAR(255) NOT NULL DEFAULT \'\',
+    PRIMARY KEY (`id_address`, `field_key`)
+) ENGINE='._MYSQL_ENGINE_.' DEFAULT CHARSET=utf8mb4;';
+
+foreach ($sql as $query) {
+    if (Db::getInstance()->execute($query) == false) {
+        return false;
+    }
+}
