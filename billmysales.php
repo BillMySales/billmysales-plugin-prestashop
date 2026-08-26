@@ -686,20 +686,35 @@ class Billmysales extends Module
         if (empty($params['newOrderStatus']) || empty($params['id_order'])) {
             return;
         }
-        // solo notificar en los estados marcados en "Estados que
-        // notifican" (pestaña Configuración) — si no, se dispara en
-        // CUALQUIER cambio de estado y BillMySales termina recibiendo
-        // varias notificaciones para el mismo pedido (una por cada
-        // cambio), rechazando las repetidas
+
+        // se cargan estos objetos ANTES del filtro de "estados que
+        // notifican" (más abajo) a propósito: si el pedido se creó desde
+        // "Crear pedido" (admin) con nuestros campos en el mismo
+        // formulario (ver hookDisplayAdminOrderCreateFields()), hay que
+        // guardarlos SIEMPRE, sin importar a qué estado se está
+        // moviendo el pedido — si el guardado quedara después del
+        // filtro, un pedido creado en un estado que no notifica (ej.
+        // "Awaiting bank wire payment") perdería esos valores en
+        // silencio, porque el hook corta antes de llegar a guardarlos.
+        $Order = new Order((int)$params['id_order']);
+        $Cart = new Cart($Order->id_cart);
+        $Billing = new Address($Cart->id_address_invoice);
+        // Tools::getValue() todavía tiene los datos porque es la misma
+        // petición HTTP; no hace nada si no vienen en este envío (ej. un
+        // cambio de estado normal desde el detalle del pedido).
+        $this->saveAddressCustomFields($Billing);
+
+        // solo notificar a BillMySales en los estados marcados en
+        // "Estados que notifican" (pestaña Configuración) — si no, se
+        // dispara en CUALQUIER cambio de estado y BillMySales termina
+        // recibiendo varias notificaciones para el mismo pedido (una por
+        // cada cambio), rechazando las repetidas
         if (!in_array((string)$params['newOrderStatus']->id, $this->getNotifyStatuses(), true)) {
             return;
         }
-        // crear objetos que se usarán para extraer datos
-        $Order = new Order((int)$params['id_order']);
+        // crear el resto de los objetos que se usarán para extraer datos
         $Customer = new Customer((int)$Order->id_customer);
-        $Cart = new Cart($Order->id_cart);
         $Address = new Address($Cart->id_address_delivery);
-        $Billing = new Address($Cart->id_address_invoice);
         $Carrier = new Carrier((int)($Order->id_carrier));
         $Shop = new Shop((int)($Order->id_shop));
         // construir arreglo con los datos que se usarán
