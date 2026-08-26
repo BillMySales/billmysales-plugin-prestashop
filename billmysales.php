@@ -613,6 +613,29 @@ class Billmysales extends Module
     }
 
     /**
+     * Método que devuelve las etiquetas de los campos personalizados
+     * marcados como obligatorios que no tienen valor guardado (ver
+     * hookActionOrderStatusPostUpdate())
+     *
+     * @param array $values Valores actuales, tal como los devuelve
+     *                       getAddressCustomFieldValues()
+     * @return string[] Etiquetas de los campos que faltan
+     */
+    private function getMissingRequiredCustomFields($values)
+    {
+        $missing = [];
+        foreach ($this->getCustomFields() as $custom_field) {
+            if (empty($custom_field['required'])) {
+                continue;
+            }
+            if (empty($values[$custom_field['key']])) {
+                $missing[] = $custom_field['label'];
+            }
+        }
+        return $missing;
+    }
+
+    /**
      * Método que agrega, en la columna derecha del detalle del pedido
      * (debajo de "Payment"), un bloque para completar/editar los campos
      * personalizados de facturación (RUT, Giro, etc.). Es necesario
@@ -731,6 +754,23 @@ class Billmysales extends Module
         $order['detail'] = $Order->getOrderDetailList();
         $order['shop'] = get_object_vars($Shop);
         unset($order['shop']['theme']);
+        // no enviar si falta algún campo personalizado obligatorio (ej.
+        // un pedido creado a mano desde el admin y llevado directo a un
+        // estado que notifica, sin pasar por el bloque "Datos de
+        // facturación" del detalle del pedido para completarlos) — mejor
+        // frenar y avisar en el log que mandar un pedido incompleto
+        $missing = $this->getMissingRequiredCustomFields($order['billing']['custom_fields']);
+        if (!empty($missing)) {
+            if (Configuration::get('BILLMYSALES_LOG')) {
+                PrestaShopLogger::addLog(
+                    'BillMySales: pedido #'.$order['id_order']
+                    .' NO se notificó porque faltan campos obligatorios: '.implode(', ', $missing)
+                    .'. Complételos en el detalle del pedido y vuelva a cambiar el estado.',
+                    2
+                );
+            }
+            return;
+        }
         // llamar al método que procesa la orden pagada
         return $this->processOrderPaid($order);
     }
