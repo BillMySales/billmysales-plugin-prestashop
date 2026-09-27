@@ -1,4 +1,5 @@
 <?php
+
 /**
  * BillMySales: Pasarela de Facturación
  * Copyright (C) SASCO SpA (https://sasco.cl)

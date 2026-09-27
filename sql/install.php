@@ -1,4 +1,5 @@
 <?php
+
 /**
  * BillMySales: Pasarela de Facturación
  * Copyright (C) SASCO SpA (https://sasco.cl)
@@ -20,7 +21,20 @@
  * En caso contrario, consulte <http://www.gnu.org/licenses/agpl.html>.
  */
 
+// La mayor parte de la configuración del módulo se guarda con
+// Configuration::updateValue()/deleteByName() (ver install()/uninstall()
+// en billmysales.php). Esta tabla es la única excepción: guarda los
+// valores de los campos personalizados que se agregan al formulario de
+// dirección del checkout (ver hookAdditionalCustomerAddressFields()).
+
 $sql = [];
+
+$sql[] = 'CREATE TABLE IF NOT EXISTS `'._DB_PREFIX_.'billmysales_address_field` (
+    `id_address` INT UNSIGNED NOT NULL,
+    `field_key` VARCHAR(64) NOT NULL,
+    `field_value` VARCHAR(255) NOT NULL DEFAULT \'\',
+    PRIMARY KEY (`id_address`, `field_key`)
+) ENGINE='._MYSQL_ENGINE_.' DEFAULT CHARSET=utf8mb4;';
 
 foreach ($sql as $query) {
     if (Db::getInstance()->execute($query) == false) {
