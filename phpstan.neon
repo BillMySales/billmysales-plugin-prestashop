@@ -1,0 +1,26 @@
+parameters:
+    # Review level, from basic (1) to very thorough (9).
+    level: 6
+    # Source code directories to be reviewed.
+    paths:
+        - plugin
+        - tests
+    # Test doubles of PrestaShop core classes (PHPStan has the real stubs).
+    excludePaths:
+        - tests/fixtures
+    # The lowest PHP the plugin supports (also when run on a newer one).
+    phpVersion: 70400
+    # No official PrestaShop stubs package exists; this is the closest
+    # community equivalent.
+    scanDirectories:
+        - vendor/stancer/php-stubs-prestashop
+    # Composer's autoloader, and the pSQL() stand-in tests use (the real
+    # stubs already declare it; kept for when this file changes).
+    bootstrapFiles:
+        - tests/bootstrap.php
+    ignoreErrors:
+        # The stubs' Context::$language and Controller-related properties are
+        # typed with a few classes the stubs package doesn't itself define
+        # (checked in its source: only referenced, never declared).
+        - '#Access to property \$id on an unknown class InstallLanguage#'
+        - '#on an unknown class LegacyControllerBridgeInterface#'

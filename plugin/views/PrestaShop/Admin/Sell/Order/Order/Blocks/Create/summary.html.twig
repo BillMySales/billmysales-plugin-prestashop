@@ -1,0 +1,23 @@
+{#**
+ * BillMySales for PrestaShop.
+ *
+ * Copyright (c) 2026 BillMySales <https://www.billmysales.com>
+ * Licensed under the European Union Public Licence v. 1.2 (EUPL-1.2).
+ * See LICENSE file for more details.
+ *
+ * Overrides the "Add new order" form's template, to add the custom billing
+ * fields inside the same <form> that submits the order's first state: an
+ * order created directly in a state that notifies then carries its billing
+ * data in the same request, with nothing left to complete afterwards.
+ *
+ * "cart_summary_form_rest" is the only block the original template exposes;
+ * there is no dedicated block right before "Order state", so the fields end
+ * up just after it (still inside the same form, submitted together with
+ * the rest of the order's data).
+ *#}
+{% extends '@!PrestaShop/Admin/Sell/Order/Order/Blocks/Create/summary.html.twig' %}
+
+{% block cart_summary_form_rest %}
+    {{ parent() }}
+    {{ renderhook('displayAdminOrderCreateFields')|raw }}
+{% endblock %}

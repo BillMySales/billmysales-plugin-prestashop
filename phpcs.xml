@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<!--
+    Rules PHP CS Fixer (the coding style, php-cs-fixer.php) doesn't have: a
+    docblock for every class, function (with its @param and @return tags)
+    and property, in the plugin and the tests. File docblocks are checked by
+    `make check-docs` (they go after declare(strict_types=1), where
+    Squiz.Commenting.FileComment doesn't look).
+
+    No automated PHP_CodeSniffer security ruleset is applied: the Addons
+    Marketplace validator (validator.prestashop.com) is a hosted tool, not a
+    package, and its checklist (SQL sanitization with pSQL()/(int) casts, no
+    serialize()/unserialize(), escaped Smarty output, index.php in every
+    folder) isn't enforceable through a public phpcs standard. Followed by
+    convention and checked in code review; run the hosted validator on
+    dist/*.zip before a release.
+-->
+<ruleset name="BillMySales PrestaShop">
+    <file>plugin</file>
+    <file>tests</file>
+    <exclude-pattern>plugin/translations/*</exclude-pattern>
+    <arg name="extensions" value="php"/>
+    <arg value="sp"/>
+    <arg name="colors"/>
+
+    <rule ref="Squiz.Commenting.ClassComment.Missing"/>
+    <rule ref="Squiz.Commenting.FunctionComment.Missing"/>
+    <rule ref="Squiz.Commenting.FunctionComment.MissingParamTag"/>
+    <rule ref="Squiz.Commenting.FunctionComment.MissingReturn"/>
+    <rule ref="Squiz.Commenting.VariableComment.Missing"/>
+</ruleset>

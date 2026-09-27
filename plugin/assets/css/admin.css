@@ -1,0 +1,21 @@
+/**
+ * BillMySales for PrestaShop.
+ *
+ * Copyright (c) 2026 BillMySales <https://www.billmysales.com>
+ * Licensed under the European Union Public Licence v. 1.2 (EUPL-1.2).
+ * See LICENSE file for more details.
+ */
+
+.billmysales-field-row {
+    border: 1px solid #ddd;
+}
+
+.billmysales-secret-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.billmysales-secret-wrapper input {
+    flex: 1;
+}

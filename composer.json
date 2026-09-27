@@ -1,0 +1,57 @@
+{
+    "name": "billmysales/billmysales-plugin-prestashop",
+    "description": "BillMySales for PrestaShop: sends orders to BillMySales and adds custom fields to the checkout.",
+    "type": "prestashop-module",
+    "homepage": "https://www.billmysales.com",
+    "license": "EUPL-1.2",
+    "authors": [
+        {
+            "name": "BillMySales",
+            "homepage": "https://www.billmysales.com"
+        }
+    ],
+    "support": {
+        "issues": "https://github.com/BillMySales/billmysales-plugin-prestashop/issues",
+        "source": "https://github.com/BillMySales/billmysales-plugin-prestashop"
+    },
+    "autoload": {
+        "psr-4": {
+            "BillMySales\\PrestaShop\\": "plugin/src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "BillMySales\\TestsPrestaShop\\": "tests/src/"
+        }
+    },
+    "require": {
+        "php": ">=7.4"
+    },
+    "require-dev": {
+        "ext-xdebug": "*",
+        "justinrainbow/json-schema": "^6.4",
+        "phpstan/extension-installer": "^1.4",
+        "phpstan/phpstan": "^1.11",
+        "phpunit/phpunit": "^9.6",
+        "squizlabs/php_codesniffer": "^3.9",
+        "stancer/php-stubs-prestashop": "^8.1",
+        "friendsofphp/php-cs-fixer": "^3.95"
+    },
+    "scripts": {
+        "tests": "XDEBUG_MODE=coverage vendor/bin/phpunit --configuration=phpunit.xml",
+        "phpcs-fix": "vendor/bin/php-cs-fixer fix -v --config=php-cs-fixer.php",
+        "phpcs": "vendor/bin/php-cs-fixer fix -v --dry-run --diff --config=php-cs-fixer.php",
+        "phpcs-rules": "vendor/bin/phpcs --standard=phpcs.xml",
+        "phpstan": "vendor/bin/phpstan analyse --configuration=phpstan.neon --memory-limit=1G",
+        "phpstan-export": "vendor/bin/phpstan analyse --configuration=phpstan.neon --level 9 --generate-baseline"
+    },
+    "config": {
+        "platform": {
+            "php": "7.4.33"
+        },
+        "sort-packages": true,
+        "allow-plugins": {
+            "phpstan/extension-installer": true
+        }
+    }
+}
