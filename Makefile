@@ -68,7 +68,7 @@ check: lint analyse test check-version
 
 # The version in the module's own metadata ($this->version) is the only
 # source; everything else must match it: CHANGELOG.md (latest entry, with a
-# date) and readme.txt equivalent (none for PrestaShop; see README.md).
+# date).
 check-version:
 	@test -n "$(VERSION)" || { echo "No \$$this->version in plugin/$(SLUG).php" >&2; exit 1; }
 	@grep -m1 '^## \[' CHANGELOG.md | grep -q "^## \[$(VERSION)\] - [0-9]\{4\}-[0-9]\{2\}-[0-9]\{2\}$$" || { echo "CHANGELOG.md: the latest entry is not $(VERSION) with a date" >&2; exit 1; }

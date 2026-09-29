@@ -21,7 +21,8 @@ declare(strict_types=1);
  * Usage: php e2e-fixtures.php <command> [args...]
  */
 
-require_once '/var/www/html/config/config.inc.php';
+// The file only exists inside the stack's container.
+require_once '/var/www/html/config/config.inc.php'; // @phpstan-ignore requireOnce.fileNotFound
 
 // The front bootstrap alone leaves Context without a currency/language/
 // country (normally set by the request Dispatcher): Order::setCurrentState()
@@ -147,7 +148,8 @@ function billmysales_e2e_count_tables(): void
 {
     $count = 0;
     foreach (['billmysales_address_field', 'billmysales_delivery_queue', 'billmysales_order_status'] as $table) {
-        if (Db::getInstance()->getRow('SHOW TABLES LIKE "' . _DB_PREFIX_ . $table . '"')) {
+        // executeS(): getRow() appends " LIMIT 1", which SHOW TABLES rejects.
+        if (Db::getInstance()->executeS('SHOW TABLES LIKE "' . _DB_PREFIX_ . $table . '"')) {
             ++$count;
         }
     }

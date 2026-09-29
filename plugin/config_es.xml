@@ -2,7 +2,7 @@
 <module>
     <name>billmysales</name>
     <displayName><![CDATA[BillMySales]]></displayName>
-    <version><![CDATA[2.0.0]]></version>
+    <version><![CDATA[2.1.0]]></version>
     <description><![CDATA[Env&iacute;a los pedidos a BillMySales cuando alcanzan los estados de pedido seleccionados, y agrega campos de facturaci&oacute;n personalizados (p. ej. RUT, giro) al checkout.]]></description>
     <author><![CDATA[BillMySales]]></author>
     <tab><![CDATA[billing_invoicing]]></tab>

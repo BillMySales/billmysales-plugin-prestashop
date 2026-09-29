@@ -318,6 +318,8 @@ final class DeliveryTest extends TestCase
      * @param array<int, string>|null          $executed Filled with every executed SQL statement.
      * @param array<int, string>|null          $selected Filled with every select SQL statement.
      * @param array<int, array<string, mixed>> $rows     Rows due() returns.
+     * @param-out array<int, string>           $executed
+     * @param-out array<int, string>           $selected
      * @return Queue
      */
     private function queue(&$executed = null, &$selected = null, array $rows = []): Queue

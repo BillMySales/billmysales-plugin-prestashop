@@ -49,6 +49,11 @@ final class Payload
      */
     public static function build_legacy(array $order, array $meta): array
     {
+        // PrestaShop 8 loads the order's state id as a string, 9 as an
+        // integer: BillMySales reads an integer whichever loaded it.
+        if (isset($order['current_state']) && is_numeric($order['current_state'])) {
+            $order['current_state'] = (int) $order['current_state'];
+        }
         if (isset($order['customer']) && is_array($order['customer'])) {
             $order['customer'] = array_diff_key($order['customer'], array_flip(self::CUSTOMER_EXCLUDED));
         }

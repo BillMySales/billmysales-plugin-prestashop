@@ -9,7 +9,11 @@
                     "type": "integer"
                 },
                 "current_state": {
-                    "type": "integer"
+                    "$comment": "PrestaShop's own representation: the state id is a string in 8 and an integer in 9.",
+                    "type": [
+                        "integer",
+                        "string"
+                    ]
                 },
                 "total_paid": {
                     "type": "string"

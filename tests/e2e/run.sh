@@ -17,10 +17,9 @@
 # replay against BillMySales; stack.log. E2E_KEEP=1 also keeps the stack
 # running (then make e2e-clean).
 #
-# PrestaShop has no official CLI for order/product fixtures (unlike some
-# other platforms' WP-CLI-alike tools): tests/e2e/fixtures.php, copied into
-# the "prestashop" container, bootstraps PrestaShop itself for the setup
-# steps that need it (creating a product, changing an order's state through
+# tests/e2e/fixtures.php, copied into the "prestashop" container, bootstraps
+# PrestaShop itself for the setup steps that need it (creating a product,
+# changing an order's state through
 # Order::setCurrentState() so actionOrderStatusPostUpdate fires as it would
 # from the back office). Everything a real shopper or merchant would do
 # (checkout, admin settings, resending an order) goes through plain HTTP
@@ -31,7 +30,10 @@
 # receiver's (8099) must be free: stop the PrestaShop development stack.
 #
 # Environment: TOOLS_IMAGE (set by the Makefile), STACK_REPO, STACK_REF
-# (default master), E2E_KEEP.
+# (default master), E2E_KEEP, E2E_STACK_ENV (extra "NAME=value" lines, one per
+# line, appended to the stack's .env: e.g. PS_VERSION, PS_SHA256 and
+# PHP_VERSION to test another PrestaShop version), E2E_RECEIVER_PORT (default
+# 8099, for when another end-to-end run holds it).
 
 set -euo pipefail
 
@@ -44,7 +46,7 @@ STACK_REPO="${STACK_REPO:-https://github.com/BillMySales/billmysales-docker-${PL
 STACK_REF="${STACK_REF:-master}"
 TOOLS_IMAGE="${TOOLS_IMAGE:?Run it with make e2e}"
 RECEIVER="${PROJECT}-receiver"
-RECEIVER_PORT=8099
+RECEIVER_PORT="${E2E_RECEIVER_PORT:-8099}"
 RECEIVER_URL="http://host.docker.internal:${RECEIVER_PORT}/"
 SECRET="e2e-secret"
 # A secret with characters that must survive the settings form and JSON.
@@ -75,7 +77,7 @@ cron() { curl -fsS "${PS_URL}/index.php?fc=module&module=billmysales&controller=
 received() { find "${E2E}/webhooks" -name '*.json' | wc -l | tr -d ' '; }
 respond() { echo "$1" > "${E2E}/respond"; }
 port_in_use() { (exec 3<> "/dev/tcp/127.0.0.1/$1") 2> /dev/null; }
-env_value() { sed -n "s/^$1=//p" "${STACK}/.env.dev.example" | head -1; }
+env_value() { { printf '%s\n' "${E2E_STACK_ENV:-}"; cat "${STACK}/.env.dev.example"; } | sed -n "s/^$1=//p" | head -1; }
 
 # Starts a test case: what the receiver got before it isn't checked.
 case_start() { printf '\n[%s] %s\n' "$1" "$2"; printf '%02d' "$1" > "${E2E}/case"; FROM="$(received)"; }
@@ -162,9 +164,11 @@ set_order_state() { # <order id> <order state id>
     cron > /dev/null
 }
 
-# Logs in to the back office as the development admin (ADMIN_JAR), and
-# reads the two per-controller tokens the theme embeds as JS globals
-# (dashboard.html), so an order or a module page can be requested directly.
+# Logs in to the back office as the development admin (ADMIN_JAR) and reads
+# the modules page's link from the dashboard: its _token is the one every
+# Symfony back office page takes (an order's page, a module's settings). The
+# login form is a Symfony one in PrestaShop 9 and the classic AdminLogin
+# controller's in 8.
 admin_login() {
     local jar="${E2E}/admin-cookies" login token dashboard
     rm -f "${jar}"
@@ -174,12 +178,25 @@ admin_login() {
     # at stack start, since it can appear later too.
     compose exec -T -u root prestashop chown -R www-data:www-data var/cache >> "${E2E}/stack.log" 2>&1 || true
     login="$(curl -fsS --retry 10 --retry-delay 3 --retry-all-errors -c "${jar}" -b "${jar}" -L "${PS_URL_ADMIN}/")"
-    token="$(printf '%s' "${login}" | sed -n '/submit_login/,/<\/form>/p' | grep -o 'name="_token"[^>]*value="[^"]*"' | head -1 | sed 's/.*value="//;s/"$//')"
-    dashboard="$(curl -fsS --retry 10 --retry-delay 3 --retry-all-errors -c "${jar}" -b "${jar}" -L -X POST "${PS_URL_ADMIN}/login?_token=" \
-        --data-urlencode "email=$(env_value PS_ADMIN_EMAIL)" --data-urlencode "passwd=$(env_value PS_ADMIN_PASSWORD)" \
-        --data-urlencode "submit_login=1" --data-urlencode "_token=${token}")"
-    ADMIN_ORDERS_TOKEN="$(printf '%s' "${dashboard}" | sed -n "s/.*tokenAdminOrders = '\([a-f0-9]*\)'.*/\1/p" | head -1)"
-    MODULES_LINK="$(printf '%s' "${dashboard}" | grep -o 'href="[^"]*improve/modules/manage?_token=[^"]*"' | head -1 | sed 's/^href="//;s/"$//')"
+    if [[ "${login}" != *'id="login_form"'* ]]; then
+        token="$(printf '%s' "${login}" | sed -n '/submit_login/,/<\/form>/p' | grep -o 'name="_token"[^>]*value="[^"]*"' | head -1 | sed 's/.*value="//;s/"$//')"
+        dashboard="$(curl -fsS --retry 10 --retry-delay 3 --retry-all-errors -c "${jar}" -b "${jar}" -L -X POST "${PS_URL_ADMIN}/login?_token=" \
+            --data-urlencode "email=$(env_value PS_ADMIN_EMAIL)" --data-urlencode "passwd=$(env_value PS_ADMIN_PASSWORD)" \
+            --data-urlencode "submit_login=1" --data-urlencode "_token=${token}")"
+    else
+        dashboard="$(curl -fsS --retry 10 --retry-delay 3 --retry-all-errors -c "${jar}" -b "${jar}" -L -X POST "${PS_URL_ADMIN}/index.php?controller=AdminLogin" \
+            --data-urlencode "email=$(env_value PS_ADMIN_EMAIL)" --data-urlencode "passwd=$(env_value PS_ADMIN_PASSWORD)" \
+            --data-urlencode "submitLogin=1" --data-urlencode "controller=AdminLogin" --data-urlencode "redirect=${PS_URL_ADMIN}/")"
+    fi
+    MODULES_LINK="$(printf '%s' "${dashboard}" | grep -o 'href="[^"]*improve/modules/manage?_token=[^"]*"' | head -1 | sed 's/^href="//;s/"$//' || true)"
+    [ -n "${MODULES_LINK}" ] || die "the back office login failed: no link to the modules list on the dashboard"
+    case "${MODULES_LINK}" in /*) MODULES_LINK="${PS_URL}${MODULES_LINK}" ;; esac
+}
+
+# The back office page of an order: the modules page's link with its route
+# replaced (same _token).
+order_page_url() { # <order id>
+    printf '%s' "${MODULES_LINK}" | sed "s#improve/modules/manage#sell/orders/$1/view#"
 }
 
 # GET/POST as the admin (admin_login's cookies).
@@ -217,6 +234,9 @@ up_and_wait() {
 stack_env() { # mount|zip
     {
         cat "${STACK}/.env.dev.example"
+        if [ -n "${E2E_STACK_ENV:-}" ]; then
+            printf '%s\n' "${E2E_STACK_ENV}"
+        fi
         echo "COMPOSE_PROJECT_NAME=${PROJECT}"
         if [ "$1" = mount ]; then
             echo "COMPOSE_FILE=compose.yaml:overrides/module.yaml"
@@ -363,7 +383,7 @@ check "$(order_expectations "${ORDER7}" 2)"
 
 case_start 8 "Sent again from the order page (\"Send to BillMySales\")"
 admin_login
-admin_post "${PS_URL_ADMIN}/?controller=AdminOrders&id_order=${ORDER7}&vieworder&token=${ADMIN_ORDERS_TOKEN}" \
+admin_post "$(order_page_url "${ORDER7}")" \
     --data-urlencode "billmysales_id_order=${ORDER7}" --data-urlencode "submitBillMySalesResend=1" > /dev/null
 cron > /dev/null
 EVENT=order.resent check "$(EVENT=order.resent order_expectations "${ORDER7}" 2)"

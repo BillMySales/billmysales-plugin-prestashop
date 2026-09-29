@@ -39,6 +39,24 @@ final class PayloadTest extends TestCase
     }
 
     /**
+     * The order's state id is an integer, also when PrestaShop loaded it as
+     * a string; a value that isn't numeric is left as is.
+     *
+     * @return void
+     */
+    public function test_build_legacy_casts_the_state_id_to_integer(): void
+    {
+        $payload = Payload::build_legacy(['current_state' => '2'], []);
+        $this->assertSame(2, $payload['current_state']);
+
+        $payload = Payload::build_legacy(['current_state' => 3], []);
+        $this->assertSame(3, $payload['current_state']);
+
+        $payload = Payload::build_legacy(['current_state' => 'paid'], []);
+        $this->assertSame('paid', $payload['current_state']);
+    }
+
+    /**
      * Missing "customer"/"shop" keys, or ones that aren't arrays, are left
      * as is.
      *

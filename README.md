@@ -23,8 +23,9 @@ form (e.g. tax id, business activity, receipt or invoice).
   addresses"; they can also be filled in from the order detail page (for an
   order not placed through the checkout) and from the "Add new order" form.
 
-Requirements: PrestaShop 8.0+ (tested up to 9.1), PHP 7.4+ (tested up to
-8.5).
+Requirements: PrestaShop 8.2 or 9.1, PHP 7.4 or later. Tested (end to end,
+every release): PrestaShop 8.2.8 with PHP 7.4 and 8.1, and 9.1.5 with PHP
+8.1 and 8.5.
 
 Installation
 ------------
@@ -129,6 +130,18 @@ new entry it reports in `scripts/i18n-es.php`, then run `make i18n` again.
 make e2e            # E2E_KEEP=1 keeps the stack running (then make e2e-clean)
 ```
 
+By default it runs on the stack's default versions. `E2E_STACK_ENV` (extra
+`NAME=value` lines, one per line, appended to the stack's `.env`) selects
+another combination, e.g. the floor:
+
+```shell
+E2E_STACK_ENV=$'PS_VERSION=8.2.8\nPS_SHA256=\nPHP_VERSION=7.4' make e2e
+```
+
+`.github/workflows/e2e.yml` runs every combination the module supports
+(8.2.8 with PHP 7.4 and 8.1, 9.1.5 with PHP 8.1 and 8.5). `E2E_RECEIVER_PORT`
+changes the receiver's port (default 8099) when another run holds it.
+
 `tests/e2e/run.sh` clones the
 [PrestaShop Docker stack](https://github.com/BillMySales/billmysales-docker-prestashop)
 into `var/e2e/stack` (`STACK_REPO`, `STACK_REF`, default `master`), starts it
@@ -179,15 +192,16 @@ each choice stays with the code:
   suggest AFL-3.0 as a default for modules contributed to its own ecosystem;
   that is a suggestion for PrestaShop's own repositories, not a Marketplace
   distribution requirement, so it didn't override the above.
-- **Minimum version**: PrestaShop 8.0, tested up to 9.1, matching the
-  versions this project's own PrestaShop stack runs. PrestaShop's release
-  policy backports fixes only one major/minor generation back, so older
-  lines (1.6, 1.7) no longer receive security patches; there is no
-  PrestaShop-published usage-share data (unlike wordpress.org) to weigh a
-  lower floor against. PHP 7.4+ (tested up to 8.5): still within PrestaShop
-  8.0's own supported range (7.2-8.1), chosen so one toolchain (PHP CS
-  Fixer, PHPStan, PHPUnit) runs unmodified from the floor to the latest PHP
-  tested, without a version-specific gap in any of them.
+- **Minimum version**: PrestaShop 8.2, the only 8.x branch that PrestaShop
+  still maintains (8.2.x, with critical and security fixes until 10.0
+  is released). PrestaShop publishes no usage-share data to weigh a lower
+  floor against. The versions the module supports are the ones its
+  end-to-end tests run on, which are the combinations the PrestaShop Docker
+  stack validates: 8.2.8 with PHP 7.4 and 8.1, and 9.1.5 with PHP 8.1 and
+  8.5 (the lowest and the highest PHP of each line, PHP 7.4 being the
+  lowest PHP this project's plugins are built with; PrestaShop 8.2 accepts
+  7.2 to 8.1 and 9.1 accepts 8.1 to 8.5), so one toolchain (PHP CS Fixer,
+  PHPStan, PHPUnit) runs unmodified from the floor to the latest PHP tested.
 - **No PHPStan stubs package**: no official stub package for PrestaShop core
   classes exists; `stancer/php-stubs-prestashop` (community) is used
   instead. A couple of its type hints reference classes it doesn't itself
@@ -213,13 +227,15 @@ each choice stays with the code:
   page load, so a shop with no cron configured still delivers eventually.
   An order state change or a manual resend only ever queues a delivery,
   never sends it in the same request.
-- **Per-order delivery status**: PrestaShop has no equivalent to a growing,
-  per-order private note log. `billmysales_order_status` keeps one row per
+- **Per-order delivery status**: `billmysales_order_status` keeps one row per
   order that has ever had a delivery attempt (replaced on each new attempt,
   bounded by the shop's order count, not by attempts), shown on the order
   detail page; the technical log (every attempt, with its detail) goes to
   PrestaShop's own logger (Advanced Parameters > Logs), which has no
   built-in retention — clear it by hand from there if it grows large.
+  Clearing it (or a shop that doesn't keep it) loses the detail of past
+  attempts, so keep it during the first tests of a new installation and
+  clear it only once the integration works.
 - **Payload format**: kept the exact "standard" shape (the order's own
   fields, plus `customer`, `cart`, `address`, `billing`, `carrier`,
   `products`, `detail`, `shop`) the 1.x module already sent, since changing
@@ -240,20 +256,21 @@ each choice stays with the code:
   result's shape with a real `/api/orders/<id>` response.
 - **Translations**: the classic per-module system (`$this->l()`,
   `{l s='...' mod='billmysales'}`), matching what the module already used.
-  Its catalog file is keyed by a 2-letter ISO language code
-  (`translations/<iso_code>.php`), not by a full locale, so a shop's
-  Spanish-language employees see the same catalog whichever Spanish variant
-  they're set to; `translations/es.php` is written for Chile (BillMySales'
-  primary market). PrestaShop's newer, Symfony-based translation system
-  does support locale-specific catalogs, but would mean moving every string
-  in the module away from `$this->l()`/`{l}`, for a distinction (es-CL vs.
-  es-ES) most employees using this module won't need.
+  The catalog file is named after the shop language's ISO code
+  (`translations/<iso_code>.php`, checked in `Translate::getModuleTranslation()`
+  and with the module on PrestaShop 9.1.5). PrestaShop has no Chilean
+  Spanish language pack: a shop in Chile uses "Español (Spanish)" (`es`), so
+  `translations/es.php` is written for Chile (BillMySales' primary market).
+  The other Spanish packs have their own ISO codes (`ag`, `cb`, `mx`, `pe`,
+  `ve`) and show the English source strings, as does any other language.
+  PrestaShop's newer, Symfony-based translation system is keyed by locale,
+  but would mean moving every string in the module away from
+  `$this->l()`/`{l}`.
 - **No JSDoc build step for `plugin/assets/js/admin.js`**: it's loaded as
   is by the back office (no bundler), so it stays plain, browser-ready
   JavaScript; ESLint (with `eslint-plugin-jsdoc`) only checks it, it
   doesn't transform it.
-- **End-to-end fixtures without a CLI**: PrestaShop has no WP-CLI-alike
-  first-party CLI. `tests/e2e/fixtures.php`, copied into the stack's
+- **End-to-end fixtures**: `tests/e2e/fixtures.php`, copied into the stack's
   `prestashop` container and run with plain `php` (not the console, whose
   Symfony kernel prints deprecation noise ahead of a command's own output,
   making its stdout unsafe to capture as a value), bootstraps PrestaShop
