@@ -75,7 +75,7 @@ class Billmysales extends Module
     {
         $this->name = 'billmysales';
         $this->tab = 'billing_invoicing';
-        $this->version = '2.1.0';
+        $this->version = '2.0.0';
         $this->author = 'BillMySales';
         $this->need_instance = 0;
         $this->ps_versions_compliancy = ['min' => '8.2', 'max' => _PS_VERSION_];
