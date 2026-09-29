@@ -24,8 +24,7 @@ Rewritten:
 - Custom billing fields for the checkout's address form (and "My
   addresses"), also editable from the order detail page and the "Add new
   order" form.
-- Supported PrestaShop versions: 8.2 and 9.1, each tested end to end
-  (8.2.8 with PHP 7.4 and 8.1, 9.1.5 with PHP 8.1 and 8.5).
+- Supported PrestaShop versions: 8.2 and 9.1.
 - The order's state id (`current_state`) is sent as an integer in the
   standard payload, whichever PrestaShop version loaded it.
 - English source strings, with a Spanish translation catalog.
